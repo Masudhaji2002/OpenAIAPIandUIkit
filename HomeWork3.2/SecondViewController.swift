@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SDWebImage
 
 class SecondViewController: UIViewController {
     
@@ -40,11 +41,12 @@ class SecondViewController: UIViewController {
     }(UIImageView())
     
     override func viewDidLoad() {
-        super.viewDidLoad()
+        super.viewDidLayoutSubviews()
         view.backgroundColor = .red
         view.addSubview(textField)
         view.addSubview(sendButton)
         view.addSubview(imageView)
+        view.addSubview(activityIndicator)
         setupConstraints()
         
     }
@@ -53,28 +55,38 @@ class SecondViewController: UIViewController {
         self.sendReq2()
     }
     
+    lazy var activityIndicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView(style: .large)
+        indicator.translatesAutoresizingMaskIntoConstraints = false
+        indicator.hidesWhenStopped = true
+        return indicator
+    }()
+    
+    
     func sendReq2() {
-            networkManager2.sendSecondRequest(prompt: textField.text ?? "") { [weak self] images in
-                guard let self = self else { return }
-                DispatchQueue.main.async {
-                    if let url = images.first?.url {
-                        self.imageURL.append(url)
-                        if let imageUrl = URL(string: url) {
-                            URLSession.shared.dataTask(with: imageUrl) { data, _, error in
-                                if let data = data, error == nil {
-                                    DispatchQueue.main.async {
-                                        self.imageView.image = UIImage(data: data)
-                                    }
-                                } else {
-                                    print("Ошибка загрузки изображения: \(error?.localizedDescription ?? "неизвестная ошибка")")
-                                }
-                            }.resume()
-                        }
-                    }
-                    self.textField.text = ""
+        
+        networkManager2.sendSecondRequest(prompt: textField.text ?? "") { [weak self] imageUrl in
+            DispatchQueue.main.async {
+                self?.activityIndicator.stopAnimating()
+
+                guard let urlString = imageUrl.first?.url, let imageUrl = URL(string: urlString) else {
+                    print("Ошибка: URL изображения невалиден или пуст")
+                    return
                 }
+
+                print("Загрузка изображения с URL: \(urlString)")
+                self?.imageView.sd_setImage(with: imageUrl) { image, error, _, _ in
+                    if let error = error {
+                        print("Ошибка загрузки изображения: \(error.localizedDescription)")
+                    } else {
+                        print("Изображение успешно загружено")
+                    }
+                }
+                self?.textField.text = ""
             }
         }
+
+    }
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
@@ -84,16 +96,17 @@ class SecondViewController: UIViewController {
             
             sendButton.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 10),
             sendButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            sendButton.trailingAnchor.constraint(equalTo: view.leadingAnchor, constant: -20),
+            sendButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             sendButton.heightAnchor.constraint(equalToConstant: 40),
-            sendButton.widthAnchor.constraint(equalToConstant: view.frame.width - 40),
+            //sendButton.widthAnchor.constraint(equalToConstant: view.frame.width - 40),
             
             imageView.topAnchor.constraint(equalTo: sendButton.bottomAnchor, constant: 10),
             imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             imageView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20),
+            
+            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
         ])
     }
-    
-    
 }

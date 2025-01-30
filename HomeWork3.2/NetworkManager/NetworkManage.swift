@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Alamofire
 
 
 class NetworkManage {
@@ -17,29 +18,22 @@ class NetworkManage {
    
     
     func sendRequest(message: String, completion: @escaping ([Choice]) -> Void) {
-        let urlComponents = URLComponents(string: baseURL)
-        guard let reqUrl = urlComponents?.url else { return }
         
-        var request = URLRequest(url: reqUrl)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let headers: HTTPHeaders = [
+            HTTPHeader(name: "Content-Type", value: "application/json"),
+            HTTPHeader(name: "Authorization", value: "Bearer \(apiKey)")
+        ]
         
-        
+        let parametrs: Parameters = [
+            "model": "gpt-4o",
+            "messages": [
+                ["role": "user", "content": message]
+        ]
+            ]
        
-        
-        let requestBody = OpenAIRequest(model: "gpt-4o", messages: [Messages(role: "user", content: message)])
-        
-        do {
-            let body = try JSONEncoder().encode(requestBody)
-            request.httpBody = body
-        } catch  {
-            print(error.localizedDescription)
-        }
-        
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            
-            guard error == nil, let data else {return}
+        AF.request(baseURL, method: .post, parameters: parametrs, encoding: JSONEncoding.default, headers: headers).response { result in
+            guard result.error == nil else {return}
+            guard let data = result.data else {return}
             
             do {
                 let decodedResponse = try JSONDecoder().decode(Responce.self, from: data)
@@ -47,6 +41,8 @@ class NetworkManage {
             } catch  {
                 print(error.localizedDescription)
             }
-        }.resume()
+            
+        }
+        }
     }
-}
+

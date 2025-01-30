@@ -5,10 +5,6 @@
 //  Created by Масуд Гаджиев on 18.01.2025.
 //
 
-struct OpenAIRequest: Encodable {
-    let model: String
-    let messages: [Messages]
-}
 
 struct Messages: Codable {
     let role: String

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Alamofire
 
 class NetworkManagerImg {
     
@@ -13,33 +14,34 @@ class NetworkManagerImg {
     let apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdhNWVmMzI0LTc1NmUtNDVlOC04YWYxLTFlMWNkMDRkMDE1NyIsImlzRGV2ZWxvcGVyIjp0cnVlLCJpYXQiOjE3MzUzOTA3NjIsImV4cCI6MjA1MDk2Njc2Mn0.xL2fhtLOtHp_K4Xn_bEAhuKgnRwYlUGwaRk-XxirgdY"
     
     func sendSecondRequest(prompt: String, completion: @escaping ([Data]) -> Void) {
-        let urlComponents = URLComponents(string: stringURL)
-        guard let reqURL = urlComponents?.url else { return }
+       
         
-        var urlRequest = URLRequest(url: reqURL)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let headers: HTTPHeaders = [
+            HTTPHeader(name: "Content-Type", value: "application/json"),
+            HTTPHeader(name: "Authorization", value: "Bearer \(apiKey)")
+        ]
         
-        let bodyStruct = ApiRequest(model: "dall-e-3", prompt: prompt, n: 1, size: "1024x1024")
+        let parametrs: Parameters = [
+            "model" : "dall-e-3",
+            "prompt" : prompt,
+            "n" : 1,
+            "size" : "1024x1024"
+        ]
         
-        do {
-            let body = try JSONEncoder().encode(bodyStruct)
-            urlRequest.httpBody = body
-        } catch {
-            print(error.localizedDescription)
-        }
-        
-        URLSession.shared.dataTask(with: urlRequest) { data, _, err in
-            guard err == nil, let data else { return }
+        AF.request(stringURL, method: .post, parameters: parametrs, encoding: JSONEncoding.default, headers: headers).response { result in
+            guard result.error == nil else { return }
+            guard let data = result.data else { return }
             
             do {
-                let result = try JSONDecoder().decode(ApiImageResponce.self, from: data)
-                completion(result.data)
+                let decodedResponse = try JSONDecoder().decode(ApiImageResponce.self, from: data)
+                completion(decodedResponse.data)
+                
             } catch {
                 print(error.localizedDescription)
+                
             }
-        }.resume()
+            
+        }
         
     }
 }

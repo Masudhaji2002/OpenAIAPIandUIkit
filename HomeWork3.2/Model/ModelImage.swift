@@ -5,12 +5,6 @@
 //  Created by Масуд Гаджиев on 20.01.2025.
 //
 
-struct ApiRequest: Encodable {
-    let model: String
-    let prompt: String
-    let n: Int
-    let size: String
-}
 
 struct ApiImageResponce: Decodable {
     let data: [Data]
